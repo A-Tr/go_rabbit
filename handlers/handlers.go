@@ -9,11 +9,11 @@ import (
 
 func HandleSend(w http.ResponseWriter, r *http.Request) {
 	prodBus := bus.InitBus()
-	prodBus.CreateMessage()
-	// if err != nil {
-	// 	log.Error("Error sending the message to Rabbit")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// }
+	err := prodBus.PublishMessage(prodBus.Ch)
+	if err != nil {
+		log.Error("Error sending the message to Rabbit")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 	log.Info("Everything went ok")
 }
 

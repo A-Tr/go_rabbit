@@ -10,33 +10,33 @@ import (
 )
 
 type BusConfig struct {
-	q      amqp.Queue
-	ch     *amqp.Channel
-	conn   *amqp.Connection
-	busErr	error
+	Q      amqp.Queue
+	Ch     *amqp.Channel
+	Conn   *amqp.Connection
+	busErr error
 }
 
 func InitBus() *BusConfig {
 	config := &BusConfig{}
-	config.conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
+	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
 		log.Error("Couldn't connect to message queue")
 	}
 
-	config.ch, config.busErr = config.conn.Channel()
+	config.Ch, config.busErr = config.Conn.Channel()
 	if config.busErr != nil {
 		log.Error("Couldn't Create Channel to message queue")
 	}
 
-	config.q, config.busErr = config.ch.QueueDeclare("test", false, false, false, false, nil)
+	config.Q, config.busErr = config.Ch.QueueDeclare("test", false, false, false, false, nil)
 	if config.busErr != nil {
 		log.Error("Couldn't create Queue")
 	}
-	
+
 	return config
 }
 
-func (*BusConfig) CreateMessage() amqp.Publishing {
+func createMessage() amqp.Publishing {
 	message := models.PostMessage{
 		Title:     "Hola",
 		Subtitle:  "Que tal",
@@ -53,8 +53,17 @@ func (*BusConfig) CreateMessage() amqp.Publishing {
 	}
 }
 
-func ConsumeMessages(ch *amqp.Channel) {
-	msgs, err := ch.Consume(
+func (*BusConfig) PublishMessage(Ch *amqp.Channel) error {
+	err := Ch.Publish("", "test", false, false, createMessage())
+	if err != nil {
+		log.Error("Couldn't sendMessage")
+		return err
+	}
+	return nil
+}
+
+func ConsumeMessages(Ch *amqp.Channel) {
+	msgs, err := Ch.Consume(
 		"test", // queue
 		"",     // consumer
 		true,   // auto-ack
