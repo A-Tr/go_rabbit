@@ -10,5 +10,6 @@ func NewRouter() *mux.Router {
 
 	router.HandleFunc("/liveness", hd.HandleLiveness)
 	router.HandleFunc("/send", hd.HandleSend)
+	router.HandleFunc("/read", hd.HandleRead)
 	return router
 }

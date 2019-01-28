@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"bytes"
 	"encoding/json"
 	"go_rabbit/models"
 	"time"
@@ -36,10 +37,9 @@ func InitBus() *BusConfig {
 	return config
 }
 
-func createMessage() amqp.Publishing {
+func createMessage(msg string) amqp.Publishing {
 	message := models.PostMessage{
-		Title:     "Hola",
-		Subtitle:  "Que tal",
+		Title:     msg,
 		Timestamp: time.Now(),
 	}
 	msgBytes, err := json.Marshal(message)
@@ -53,8 +53,8 @@ func createMessage() amqp.Publishing {
 	}
 }
 
-func (*BusConfig) PublishMessage(Ch *amqp.Channel) error {
-	err := Ch.Publish("", "test", false, false, createMessage())
+func (b *BusConfig) PublishMessage(msg string) error {
+	err := b.Ch.Publish("", "test", false, false, createMessage(msg))
 	if err != nil {
 		log.Error("Couldn't sendMessage")
 		return err
@@ -62,8 +62,8 @@ func (*BusConfig) PublishMessage(Ch *amqp.Channel) error {
 	return nil
 }
 
-func ConsumeMessages(Ch *amqp.Channel) {
-	msgs, err := Ch.Consume(
+func (b *BusConfig) ConsumeMessages() ([]byte, error) {
+	msgs, err := b.Ch.Consume(
 		"test", // queue
 		"",     // consumer
 		true,   // auto-ack
@@ -75,8 +75,13 @@ func ConsumeMessages(Ch *amqp.Channel) {
 
 	if err != nil {
 		log.Error("Error reading messages")
+		return nil, err
 	}
+
+	var buffer bytes.Buffer
 	for d := range msgs {
-		log.Print(d)
+		d.Ack(true)
+		buffer.Write(d.Body)
 	}
+	return buffer.Bytes(), nil
 }
