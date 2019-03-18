@@ -9,7 +9,7 @@ func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/liveness", hd.HandleLiveness)
-	router.HandleFunc("/send", hd.HandleSend)
+	router.HandleFunc("/api/chat", hd.HandleSend).Methods("POST")
 	router.HandleFunc("/read", hd.HandleRead)
 	return router
 }

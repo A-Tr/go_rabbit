@@ -15,6 +15,6 @@ func main() {
 
 	bus.InitBus()
 
-	log.Fatal(http.ListenAndServe(":3000", router))
+	log.Fatal(http.ListenAndServe(":3001", router))
 }
 

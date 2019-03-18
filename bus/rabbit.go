@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"go_rabbit/models"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -29,7 +28,7 @@ func InitBus() *BusConfig {
 		log.Error("Couldn't Create Channel to message queue")
 	}
 
-	config.Q, config.busErr = config.Ch.QueueDeclare("test", false, false, false, false, nil)
+	config.Q, config.busErr = config.Ch.QueueDeclare("chatroom", false, false, false, false, nil)
 	if config.busErr != nil {
 		log.Error("Couldn't create Queue")
 	}
@@ -37,10 +36,10 @@ func InitBus() *BusConfig {
 	return config
 }
 
-func createMessage(msg string) amqp.Publishing {
+func createMessage(msg models.PostMessage) amqp.Publishing {
 	message := models.PostMessage{
-		Title:     msg,
-		Timestamp: time.Now(),
+		Title:     msg.Title,
+		Message:     msg.Message,
 	}
 	msgBytes, err := json.Marshal(message)
 	if err != nil {
@@ -48,13 +47,13 @@ func createMessage(msg string) amqp.Publishing {
 	}
 
 	return amqp.Publishing{
-		ContentType: "text/plain",
+		ContentType: "text/json",
 		Body:        msgBytes,
 	}
 }
 
-func (b *BusConfig) PublishMessage(msg string) error {
-	err := b.Ch.Publish("", "test", false, false, createMessage(msg))
+func (b *BusConfig) PublishMessage(msg models.PostMessage) error {
+	err := b.Ch.Publish("", "chatroom", false, false, createMessage(msg))
 	if err != nil {
 		log.Error("Couldn't sendMessage")
 		return err
@@ -64,7 +63,7 @@ func (b *BusConfig) PublishMessage(msg string) error {
 
 func (b *BusConfig) ConsumeMessages() ([]byte, error) {
 	msgs, err := b.Ch.Consume(
-		"test", // queue
+		"chatroom", // queue
 		"",     // consumer
 		true,   // auto-ack
 		false,  // exclusive
@@ -81,7 +80,7 @@ func (b *BusConfig) ConsumeMessages() ([]byte, error) {
 	var buffer bytes.Buffer
 	for d := range msgs {
 		d.Ack(true)
-		buffer.Write(d.Body)
+		// buffer.Write(d.Body)
 	}
 	return buffer.Bytes(), nil
 }
