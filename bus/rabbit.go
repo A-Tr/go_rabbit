@@ -1,7 +1,7 @@
 package bus
 
 import (
-	"bytes"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -12,26 +12,24 @@ type RabbitBus struct {
 	Ch     *amqp.Channel
 	Conn   *amqp.Connection
 	busErr error
+	done   chan error
 }
 
-func InitRabbitBus(config *RabbitBus) *RabbitBus {
+func InitRabbitBus(bus *RabbitBus) *RabbitBus {
 	log.Info("Starting bus")
-	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
-	if config.busErr != nil {
+
+	bus.done = make(chan error)
+	bus.Conn, bus.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
+	if bus.busErr != nil {
 		log.Error("Couldn't connect to message queue")
 	}
 
-	config.Ch, config.busErr = config.Conn.Channel()
-	if config.busErr != nil {
+	bus.Ch, bus.busErr = bus.Conn.Channel()
+	if bus.busErr != nil {
 		log.Error("Couldn't Create Channel to message queue")
 	}
 
-	config.Q, config.busErr = config.Ch.QueueDeclare("chatroom", false, false, false, false, nil)
-	if config.busErr != nil {
-		log.Error("Couldn't create Queue")
-	}
-
-	return config
+	return bus
 }
 func createMessage(msg []byte) amqp.Publishing {
 	return amqp.Publishing{
@@ -43,7 +41,12 @@ func createMessage(msg []byte) amqp.Publishing {
 func (b *RabbitBus) SendMessage(msg []byte) error {
 
 	log.Info("sending message to Rabbit: ", string(msg))
-	err := b.Ch.Publish("", "chatroom", false, false, createMessage(msg))
+	b.Q, b.busErr = b.Ch.QueueDeclare("definitivo", false, false, false, false, nil)
+	if b.busErr != nil {
+		log.Error("Couldn't create Queue or Queue doesn't exist")
+	}
+
+	err := b.Ch.Publish("", "definitivo", true, false, createMessage(msg))
 	if err != nil {
 		log.Error("Couldn't sendMessage: ", err.Error())
 		return err
@@ -54,25 +57,33 @@ func (b *RabbitBus) SendMessage(msg []byte) error {
 }
 
 func (b *RabbitBus) ConsumeMessages() ([]byte, error) {
-	msgs, err := b.Ch.Consume(
-		"chatroom", // queue
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
+	b.Q, b.busErr = b.Ch.QueueDeclare("definitivo", false, false, false, false, nil)
+	if b.busErr != nil {
+		log.Error("Couldn't create Queue or Queue doesn't exist")
+	}
+	deliveries, err := b.Ch.Consume(
+		"definitivo", // name
+		"consumer",   // consumerTag,
+		false,        // noAck
+		false,        // exclusive
+		false,        // noLocal
+		false,        // noWait
+		nil,          // arguments
 	)
-
 	if err != nil {
-		log.Error("Error reading messages")
-		return nil, err
+		return nil, fmt.Errorf("Queue Consume: %s", err)
 	}
 
-	var buffer bytes.Buffer
-	for d := range msgs {
+	go handle(deliveries, b.done)
+
+	return nil, nil
+}
+
+func handle(deliveries <-chan amqp.Delivery, done chan error) {
+	for d := range deliveries {
+		log.Print("Message received: ", string(d.Body))
 		d.Ack(true)
-		// buffer.Write(d.Body)
 	}
-	return buffer.Bytes(), nil
+	log.Printf("handle: deliveries channel closed")
+	done <- nil
 }

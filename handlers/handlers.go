@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"go_rabbit/bus"
+	"go_rabbit/config"
 	"go_rabbit/models"
 	"net/http"
 
@@ -11,7 +12,7 @@ import (
 
 func HandleSend(w http.ResponseWriter, r *http.Request) {
 
-	eb := bus.InitBus()
+	eb := bus.NewBus(config.BusType)
 	var msg models.PostMessage
 	defer r.Body.Close()
 

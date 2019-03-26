@@ -1,17 +1,22 @@
 package bus
 
-import (
-	"os"
-)
-
-
+// Bus interface implements
+// all neccesary bus methods
 type Bus interface {
 	SendMessage([]byte) error
+	ConsumeMessages() ([]byte, error)
 }
 
-func InitBus() Bus {
+// Possible bus types
+const (
+	RABBIT = "RABBIT"
+	TEST = "TEST"
+)
+
+// 
+func NewBus(busType string) Bus {
 	
-	if(os.Getenv("ENV") == "TEST") {
+	if(busType == "TEST") {
 		return &FakeBus{}
 	}
 
