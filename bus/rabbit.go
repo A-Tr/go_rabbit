@@ -2,22 +2,20 @@ package bus
 
 import (
 	"bytes"
-	"encoding/json"
-	"go_rabbit/models"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
-type BusConfig struct {
+type RabbitBus struct {
 	Q      amqp.Queue
 	Ch     *amqp.Channel
 	Conn   *amqp.Connection
 	busErr error
 }
 
-func InitBus() *BusConfig {
-	config := &BusConfig{}
+func InitRabbitBus(config *RabbitBus) *RabbitBus {
+	log.Info("Starting bus")
 	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
 		log.Error("Couldn't connect to message queue")
@@ -35,41 +33,35 @@ func InitBus() *BusConfig {
 
 	return config
 }
-
-func createMessage(msg models.PostMessage) amqp.Publishing {
-	message := models.PostMessage{
-		Title:     msg.Title,
-		Message:     msg.Message,
-	}
-	msgBytes, err := json.Marshal(message)
-	if err != nil {
-		log.Error("Error Marshalling the Message")
-	}
-
+func createMessage(msg []byte) amqp.Publishing {
 	return amqp.Publishing{
 		ContentType: "text/json",
-		Body:        msgBytes,
+		Body:        msg,
 	}
 }
 
-func (b *BusConfig) PublishMessage(msg models.PostMessage) error {
+func (b *RabbitBus) SendMessage(msg []byte) error {
+
+	log.Info("sending message to Rabbit: ", string(msg))
 	err := b.Ch.Publish("", "chatroom", false, false, createMessage(msg))
 	if err != nil {
-		log.Error("Couldn't sendMessage")
+		log.Error("Couldn't sendMessage: ", err.Error())
 		return err
 	}
+
+	log.Info("Message succesfully sent")
 	return nil
 }
 
-func (b *BusConfig) ConsumeMessages() ([]byte, error) {
+func (b *RabbitBus) ConsumeMessages() ([]byte, error) {
 	msgs, err := b.Ch.Consume(
 		"chatroom", // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+		"",         // consumer
+		true,       // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // args
 	)
 
 	if err != nil {

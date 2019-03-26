@@ -10,6 +10,6 @@ func NewRouter() *mux.Router {
 
 	router.HandleFunc("/liveness", hd.HandleLiveness)
 	router.HandleFunc("/api/chat", hd.HandleSend).Methods("POST")
-	router.HandleFunc("/read", hd.HandleRead)
+	// router.HandleFunc("/read", hd.HandleRead)
 	return router
 }

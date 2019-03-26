@@ -11,7 +11,7 @@ import (
 
 func HandleSend(w http.ResponseWriter, r *http.Request) {
 
-	bus := bus.InitBus()
+	eb := bus.InitBus()
 	var msg models.PostMessage
 	defer r.Body.Close()
 
@@ -19,33 +19,33 @@ func HandleSend(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&msg)
 	if err != nil {
 		log.Error("Error decoding JSON msg")
+		return
 	}
 
-	for i := 0; i < 10000; i++ {
-		msg.Message = "quease5"
-		err = bus.PublishMessage(msg)
-		log.Info("MESSAGE ", msg, " sent")
-		if err != nil {
-			log.Error("Error sending the message to Rabbit")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}	
-	}
-	log.Info("Everything went ok")
-}
-
-func HandleRead(w http.ResponseWriter, r *http.Request) {
-	bus := bus.InitBus()
-	resBytes, err := bus.ConsumeMessages()
+	msgBytes, err := json.Marshal(msg)
 	if err != nil {
-		log.Error("Error sending the message to Rabbit")
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Error("Error preparing JSON for sending")
+		return
 	}
-	var mappedRes models.PostMessage
-	json.Unmarshal(resBytes, &mappedRes)
-	w.Write(resBytes)
-	log.Info("Everything went ok")
+
+	err = eb.SendMessage(msgBytes)
+	if err != nil {
+		log.Error("Error sending json")
+	}
 }
+
+// func HandleRead(w http.ResponseWriter, r *http.Request) {
+// 	bus := bus.InitBus()
+// 	resBytes, err := bus.ConsumeMessages()
+// 	if err != nil {
+// 		log.Error("Error sending the message to Rabbit")
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 	}
+// 	var mappedRes models.PostMessage
+// 	json.Unmarshal(resBytes, &mappedRes)
+// 	w.Write(resBytes)
+// 	log.Info("Everything went ok")
+// }
 
 func HandleLiveness(w http.ResponseWriter, r *http.Request) {
 	log.Print("TODO EN ORDEN")
