@@ -56,7 +56,7 @@ func (b *RabbitBus) SendMessage(msg []byte) error {
 	return nil
 }
 
-func (b *RabbitBus) ConsumeMessages() ([]byte, error) {
+func (b *RabbitBus) ConsumeMessages() error {
 	b.Q, b.busErr = b.Ch.QueueDeclare("definitivo", false, false, false, false, nil)
 	if b.busErr != nil {
 		log.Error("Couldn't create Queue or Queue doesn't exist")
@@ -71,17 +71,17 @@ func (b *RabbitBus) ConsumeMessages() ([]byte, error) {
 		nil,          // arguments
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Queue Consume: %s", err)
+		return fmt.Errorf("Queue Consume: %s", err)
 	}
 
 	go handle(deliveries, b.done)
 
-	return nil, nil
+	return nil
 }
 
 func handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
-		log.Print("Message received: ", string(d.Body))
+		HandleMessage(d.Body)
 		d.Ack(true)
 	}
 	log.Printf("handle: deliveries channel closed")

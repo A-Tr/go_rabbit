@@ -8,9 +8,15 @@ import (
 
 )
 
+func init() {
+
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+		ForceColors: true,
+	})
+}
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
 	router := api.NewRouter()
 	log.Print("Starting server")
 

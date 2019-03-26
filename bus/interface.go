@@ -4,7 +4,7 @@ package bus
 // all neccesary bus methods
 type Bus interface {
 	SendMessage([]byte) error
-	ConsumeMessages() ([]byte, error)
+	ConsumeMessages() error
 }
 
 // Possible bus types

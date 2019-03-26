@@ -11,7 +11,7 @@ func (b *FakeBus) SendMessage(msg []byte) error {
 	return nil
 }
 
-func (b *FakeBus) ConsumeMessages() ([]byte, error) {
+func (b *FakeBus) ConsumeMessages() error {
 	log.Print("TEST BUS: Message consumed: ")
-	return nil, nil
+	return nil
 }
