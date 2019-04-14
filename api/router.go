@@ -4,11 +4,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter() *mux.Router {
+func NewRouter(hd *Handlers) *mux.Router {
+
 	router := mux.NewRouter()
 
-	router.HandleFunc("/liveness", HandleLiveness)
-	router.HandleFunc("/api/chat", HandleSend).Methods("POST")
+	router.HandleFunc("/liveness", hd.HandleLiveness)
+	router.HandleFunc("/api/chat", hd.HandleSend).Methods("POST")
 	// router.HandleFunc("/read", hd.HandleRead)
 	return router
 }

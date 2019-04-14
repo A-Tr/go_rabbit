@@ -1,23 +1,29 @@
 package main
 
 import (
-	log"github.com/sirupsen/logrus"
-	"net/http"
 	"go_rabbit/api"
 	"go_rabbit/bus"
+	"net/http"
 
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
-		ForceColors: true,
+		ForceColors:   true,
 	})
 }
 
 func main() {
-	router := api.NewRouter()
+	eB := &bus.RabbitBus{}
+	eB = bus.ConfigRabbitBus(eB)
+
+	hd := &api.Handlers{
+		EventBus: eB,
+	}
+	router := api.NewRouter(hd)
 	log.Print("Starting server")
 
 	eb := bus.NewBus("RABBIT")
@@ -25,4 +31,3 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":3001", router))
 }
-

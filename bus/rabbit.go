@@ -15,7 +15,7 @@ type RabbitBus struct {
 	done   chan error
 }
 
-func InitRabbitBus(bus *RabbitBus) *RabbitBus {
+func ConfigRabbitBus(bus *RabbitBus) *RabbitBus {
 	log.Info("Starting bus")
 
 	bus.done = make(chan error)
@@ -31,6 +31,7 @@ func InitRabbitBus(bus *RabbitBus) *RabbitBus {
 
 	return bus
 }
+
 func createMessage(msg []byte) amqp.Publishing {
 	return amqp.Publishing{
 		ContentType: "text/json",

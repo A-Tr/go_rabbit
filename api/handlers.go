@@ -3,16 +3,18 @@ package api
 import (
 	"encoding/json"
 	"go_rabbit/bus"
-	"go_rabbit/config"
 	"go_rabbit/models"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func HandleSend(w http.ResponseWriter, r *http.Request) {
+type Handlers struct {
+	EventBus bus.Bus
+}
 
-	eb := bus.NewBus(config.BusType)
+func (h *Handlers) HandleSend(w http.ResponseWriter, r *http.Request) {
+
 	var msg models.PostMessage
 	defer r.Body.Close()
 
@@ -29,7 +31,7 @@ func HandleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = eb.SendMessage(msgBytes)
+	err = h.EventBus.SendMessage(msgBytes)
 	if err != nil {
 		log.Error("Error sending json")
 	}
@@ -48,12 +50,12 @@ func HandleSend(w http.ResponseWriter, r *http.Request) {
 // 	log.Info("Everything went ok")
 // }
 
-func HandleLiveness(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleLiveness(w http.ResponseWriter, r *http.Request) {
 	log.Print("TODO EN ORDEN")
 	w.WriteHeader(200)
 }
 
-func HandleReadiness(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleReadiness(w http.ResponseWriter, r *http.Request) {
 	log.Print("TODO EN ORDEN")
 	w.WriteHeader(200)
 }
