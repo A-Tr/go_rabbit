@@ -1,36 +1,43 @@
 package handlers
 
 import (
-	"github.com/satori/go.uuid"
 	"encoding/json"
-	"go_rabbit/models"
 	"go_rabbit/bus"
+	"go_rabbit/models"
 	"net/http"
+
 	log "github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	Bus *bus.BusConfig
+	Bus bus.Bus
 }
 
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
-	reqId, _ := uuid.NewV4()
-	logger := log.WithField("request-id", reqId)
+	logger := log.WithField("request-id", r.Header.Get("request-id"))
 
-	err :=  h.Bus.PublishMessage("Mi nombre es Pepe", logger)
+	err := h.Bus.PublishMessage("SKIBIDIDIBUP", "SOMEQUEUE", logger)
 	if err != nil {
-		logger.Error("Error sending the message to Rabbit")
-		w.WriteHeader(http.StatusInternalServerError)
+		HandleError(err, http.StatusInternalServerError, w, logger)
+		return
 	}
 	logger.Info("Everything went ok")
 }
 
 func HandleRead(w http.ResponseWriter, r *http.Request) {
-	bus := bus.InitBus()
+	bus, err := bus.InitBus()
+
+	logger := log.WithField("request-id", r.Header.Get("request-id"))
+
+	if err != nil {
+		HandleError(err, http.StatusInternalServerError, w, logger)
+		return
+	}
+
 	resBytes, err := bus.ConsumeMessages()
 	if err != nil {
-		log.Error("Error sending the message to Rabbit")
-		w.WriteHeader(http.StatusInternalServerError)
+		HandleError(err, http.StatusInternalServerError, w, logger)
+		return
 	}
 	var mappedRes models.PostMessage
 	json.Unmarshal(resBytes, &mappedRes)
@@ -46,4 +53,17 @@ func HandleLiveness(w http.ResponseWriter, r *http.Request) {
 func HandleReadiness(w http.ResponseWriter, r *http.Request) {
 	log.Print("TODO EN ORDEN")
 	w.WriteHeader(200)
+}
+
+func HandleError(err error, code int, w http.ResponseWriter, logger *log.Entry) {
+	logger.WithError(err).Error("Error processing request")
+	eR := ErrorResponse{code, err.Error()}
+	erb, _ := json.Marshal(eR)
+	w.WriteHeader(code)
+	w.Write(erb)
+}
+
+type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }

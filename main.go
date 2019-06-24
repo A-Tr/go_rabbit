@@ -12,7 +12,10 @@ import (
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 
-	eb := bus.InitBus()
+	eb, err := bus.InitBus()
+	if err != nil {
+		log.WithError(err).Fatal("Error connecting to bus")
+	}
 	handler := handlers.Handler{
 		Bus: eb,
 	}
@@ -22,8 +25,6 @@ func main() {
 
 	appRouter := app.CreateRouter()
 	log.Print("Starting server on port 3000")
-
-	bus.InitBus()
 
 	log.Fatal(http.ListenAndServe(":3000", appRouter))
 }

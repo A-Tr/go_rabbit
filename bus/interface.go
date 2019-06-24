@@ -6,5 +6,5 @@ import (
 
 
 type Bus interface {
-	PublishMessage(string, *logrus.Entry) error
+	PublishMessage(string, string, *logrus.Entry) error
 }

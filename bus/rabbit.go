@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"github.com/pkg/errors"
 	"bytes"
 	"encoding/json"
 	"go_rabbit/models"
@@ -17,24 +18,21 @@ type BusConfig struct {
 	busErr error
 }
 
-func InitBus() *BusConfig {
+func InitBus() (*BusConfig, error) {
 	config := &BusConfig{}
 	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
-		log.Error("Couldn't connect to message queue")
+		err := errors.Wrapf(config.busErr, "Couldn't connect to message queue")
+		return nil, err
 	}
 
 	config.Ch, config.busErr = config.Conn.Channel()
 	if config.busErr != nil {
-		log.Error("Couldn't Create Channel to message queue")
+		err := errors.Wrapf(config.busErr, "Couldn't Create Channel to message queue")
+		return nil, err
 	}
 
-	config.Q, config.busErr = config.Ch.QueueDeclare("test", false, false, false, false, nil)
-	if config.busErr != nil {
-		log.Error("Couldn't create Queue")
-	}
-
-	return config
+	return config, nil
 }
 
 func createMessage(msg string) amqp.Publishing {
@@ -53,10 +51,17 @@ func createMessage(msg string) amqp.Publishing {
 	}
 }
 
-func (b *BusConfig) PublishMessage(msg string, log *log.Entry) error {
-	err := b.Ch.Publish("", "test", false, false, createMessage(msg))
+func (b *BusConfig) PublishMessage(msg, queue string, log *log.Entry) error {
+	b.Q, b.busErr = b.Ch.QueueDeclare(queue, false, false, false, false, nil)
+	if b.busErr != nil {
+		err := errors.Wrapf(b.busErr, "QUEUE ERROR: %s", queue)
+		return err
+	}
+
+
+	err := b.Ch.Publish("", queue, false, false, createMessage(msg))
 	if err != nil {
-		log.Error("Couldn't sendMessage")
+		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't sendMessage %s to queue %s", msg, queue)
 		return err
 	}
 	return nil
