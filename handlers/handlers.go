@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/satori/go.uuid"
 	"encoding/json"
 	"go_rabbit/models"
 	"go_rabbit/bus"
@@ -8,14 +9,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func HandleSend(w http.ResponseWriter, r *http.Request) {
-	bus := bus.InitBus()
-	err := bus.PublishMessage("Mi nombre es Pepe")
+type Handler struct {
+	Bus *bus.BusConfig
+}
+
+func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
+	reqId, _ := uuid.NewV4()
+	logger := log.WithField("request-id", reqId)
+
+	err :=  h.Bus.PublishMessage("Mi nombre es Pepe", logger)
 	if err != nil {
-		log.Error("Error sending the message to Rabbit")
+		logger.Error("Error sending the message to Rabbit")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	log.Info("Everything went ok")
+	logger.Info("Everything went ok")
 }
 
 func HandleRead(w http.ResponseWriter, r *http.Request) {

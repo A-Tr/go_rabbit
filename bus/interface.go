@@ -1,7 +1,10 @@
 package bus
 
+import (
+	"github.com/sirupsen/logrus"
+)
+
 
 type Bus interface {
-	InitBus() *BusConfig
-	PublishMessage(string) error
+	PublishMessage(string, *logrus.Entry) error
 }

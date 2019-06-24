@@ -53,7 +53,7 @@ func createMessage(msg string) amqp.Publishing {
 	}
 }
 
-func (b *BusConfig) PublishMessage(msg string) error {
+func (b *BusConfig) PublishMessage(msg string, log *log.Entry) error {
 	err := b.Ch.Publish("", "test", false, false, createMessage(msg))
 	if err != nil {
 		log.Error("Couldn't sendMessage")
