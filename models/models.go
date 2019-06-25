@@ -5,6 +5,7 @@ import (
 )
 
 type PostMessage struct {
-	Title     string    `json:"Title"`
+	Message   string    `json:"Message"`
+	Publisher string    `json:"Publisher"`
 	Timestamp time.Time `json:"Timestamp"`
 }

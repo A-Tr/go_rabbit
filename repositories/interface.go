@@ -1,10 +1,10 @@
-package bus
+package repositories
 
 import (
 	"github.com/sirupsen/logrus"
 )
 
 
-type Bus interface {
+type Repository interface {
 	PublishMessage(string, string, *logrus.Entry) error
 }

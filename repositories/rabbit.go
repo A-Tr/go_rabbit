@@ -1,25 +1,30 @@
-package bus
+package repositories
 
 import (
-	"github.com/pkg/errors"
 	"bytes"
 	"encoding/json"
 	"go_rabbit/models"
 	"time"
 
+	"github.com/pkg/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
-type BusConfig struct {
-	Q      amqp.Queue
-	Ch     *amqp.Channel
-	Conn   *amqp.Connection
-	busErr error
+type RabbitRepo struct {
+	Q       amqp.Queue
+	Ch      *amqp.Channel
+	Conn    *amqp.Connection
+	busErr  error
+	SrvName string
 }
 
-func InitBus() (*BusConfig, error) {
-	config := &BusConfig{}
+func InitRabbitRepo(srvName string) (*RabbitRepo, error) {
+	config := &RabbitRepo{
+		SrvName: srvName,
+	}
+
 	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
 		err := errors.Wrapf(config.busErr, "Couldn't connect to message queue")
@@ -35,9 +40,10 @@ func InitBus() (*BusConfig, error) {
 	return config, nil
 }
 
-func createMessage(msg string) amqp.Publishing {
+func (b *RabbitRepo) createMessage(msg string) amqp.Publishing {
 	message := models.PostMessage{
-		Title:     msg,
+		Message:   msg,
+		Publisher: b.SrvName,
 		Timestamp: time.Now(),
 	}
 	msgBytes, err := json.Marshal(message)
@@ -51,15 +57,14 @@ func createMessage(msg string) amqp.Publishing {
 	}
 }
 
-func (b *BusConfig) PublishMessage(msg, queue string, log *log.Entry) error {
+func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 	b.Q, b.busErr = b.Ch.QueueDeclare(queue, false, false, false, false, nil)
 	if b.busErr != nil {
 		err := errors.Wrapf(b.busErr, "QUEUE ERROR: %s", queue)
 		return err
 	}
 
-
-	err := b.Ch.Publish("", queue, false, false, createMessage(msg))
+	err := b.Ch.Publish("", queue, false, false, b.createMessage(msg))
 	if err != nil {
 		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't sendMessage %s to queue %s", msg, queue)
 		return err
@@ -67,7 +72,7 @@ func (b *BusConfig) PublishMessage(msg, queue string, log *log.Entry) error {
 	return nil
 }
 
-func (b *BusConfig) ConsumeMessages() ([]byte, error) {
+func (b *RabbitRepo) ConsumeMessages() ([]byte, error) {
 	msgs, err := b.Ch.Consume(
 		"test", // queue
 		"",     // consumer

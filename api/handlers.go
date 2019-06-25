@@ -1,22 +1,21 @@
-package handlers
+package api
 
 import (
 	"encoding/json"
-	"go_rabbit/bus"
-	"go_rabbit/models"
+	rp "go_rabbit/repositories"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	Bus bus.Bus
+	Repository rp.Repository
 }
 
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 	logger := log.WithField("request-id", r.Header.Get("request-id"))
 
-	err := h.Bus.PublishMessage("SKIBIDIDIBUP", "SOMEQUEUE", logger)
+	err := h.Repository.PublishMessage("SKIBIDIDIBUP", "SOMEQUEUE", logger)
 	if err != nil {
 		HandleError(err, http.StatusInternalServerError, w, logger)
 		return
@@ -24,26 +23,26 @@ func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Everything went ok")
 }
 
-func HandleRead(w http.ResponseWriter, r *http.Request) {
-	bus, err := bus.InitBus()
+// func HandleRead(w http.ResponseWriter, r *http.Request) {
+// 	bus, err := bus.InitBus()
 
-	logger := log.WithField("request-id", r.Header.Get("request-id"))
+// 	logger := log.WithField("request-id", r.Header.Get("request-id"))
 
-	if err != nil {
-		HandleError(err, http.StatusInternalServerError, w, logger)
-		return
-	}
+// 	if err != nil {
+// 		HandleError(err, http.StatusInternalServerError, w, logger)
+// 		return
+// 	}
 
-	resBytes, err := bus.ConsumeMessages()
-	if err != nil {
-		HandleError(err, http.StatusInternalServerError, w, logger)
-		return
-	}
-	var mappedRes models.PostMessage
-	json.Unmarshal(resBytes, &mappedRes)
-	w.Write(resBytes)
-	log.Info("Everything went ok")
-}
+// 	resBytes, err := bus.ConsumeMessages()
+// 	if err != nil {
+// 		HandleError(err, http.StatusInternalServerError, w, logger)
+// 		return
+// 	}
+// 	var mappedRes models.PostMessage
+// 	json.Unmarshal(resBytes, &mappedRes)
+// 	w.Write(resBytes)
+// 	log.Info("Everything went ok")
+// }
 
 func HandleLiveness(w http.ResponseWriter, r *http.Request) {
 	log.Print("TODO EN ORDEN")
