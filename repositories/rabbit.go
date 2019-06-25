@@ -27,20 +27,20 @@ func InitRabbitRepo(srvName string) (*RabbitRepo, error) {
 
 	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
-		err := errors.Wrapf(config.busErr, "Couldn't connect to message queue")
+		err := errors.Wrapf(config.busErr, "REPO ERROR")
 		return nil, err
 	}
 
 	config.Ch, config.busErr = config.Conn.Channel()
 	if config.busErr != nil {
-		err := errors.Wrapf(config.busErr, "Couldn't Create Channel to message queue")
+		err := errors.Wrapf(config.busErr, "REPO ERROR")
 		return nil, err
 	}
 
 	return config, nil
 }
 
-func (b *RabbitRepo) createMessage(msg string) amqp.Publishing {
+func (b *RabbitRepo) createMessage(msg string) (amqp.Publishing, error) {
 	message := models.PostMessage{
 		Message:   msg,
 		Publisher: b.SrvName,
@@ -49,12 +49,13 @@ func (b *RabbitRepo) createMessage(msg string) amqp.Publishing {
 	msgBytes, err := json.Marshal(message)
 	if err != nil {
 		log.Error("Error Marshalling the Message")
+		return amqp.Publishing{}, err
 	}
 
 	return amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        msgBytes,
-	}
+	}, nil
 }
 
 func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
@@ -64,7 +65,12 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 		return err
 	}
 
-	err := b.Ch.Publish("", queue, false, false, b.createMessage(msg))
+	msgRdy, err := b.createMessage(msg)
+	if err != nil {
+		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't create message %s", msg, queue)
+		return err
+	}
+	err = b.Ch.Publish("NEW_EXCHANGE", queue, false, false, msgRdy)
 	if err != nil {
 		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't sendMessage %s to queue %s", msg, queue)
 		return err

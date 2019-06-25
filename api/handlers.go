@@ -15,7 +15,7 @@ type Handler struct {
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 	logger := log.WithField("request-id", r.Header.Get("request-id"))
 
-	err := h.Repository.PublishMessage("SKIBIDIDIBUP", "SOMEQUEUE", logger)
+	err := h.Repository.PublishMessage("nuevomensajedefinitivo", "SOMEQUEUE", logger)
 	if err != nil {
 		HandleError(err, http.StatusInternalServerError, w, logger)
 		return
