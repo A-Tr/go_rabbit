@@ -67,10 +67,11 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 
 	msgRdy, err := b.createMessage(msg)
 	if err != nil {
-		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't create message %s", msg, queue)
+		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't create message %s for queue %s", msg, queue)
 		return err
 	}
-	err = b.Ch.Publish("NEW_EXCHANGE", queue, false, false, msgRdy)
+
+	err = b.Ch.Publish("", queue, false, false, msgRdy)
 	if err != nil {
 		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't sendMessage %s to queue %s", msg, queue)
 		return err
@@ -78,9 +79,9 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 	return nil
 }
 
-func (b *RabbitRepo) ConsumeMessages() ([]byte, error) {
+func (b *RabbitRepo) ConsumeMessages(c chan []byte) error {
 	msgs, err := b.Ch.Consume(
-		"test", // queue
+		"SOMEQUEUE", // queue
 		"",     // consumer
 		true,   // auto-ack
 		false,  // exclusive
@@ -91,7 +92,7 @@ func (b *RabbitRepo) ConsumeMessages() ([]byte, error) {
 
 	if err != nil {
 		log.Error("Error reading messages")
-		return nil, err
+		return err
 	}
 
 	var buffer bytes.Buffer
@@ -99,5 +100,8 @@ func (b *RabbitRepo) ConsumeMessages() ([]byte, error) {
 		d.Ack(true)
 		buffer.Write(d.Body)
 	}
-	return buffer.Bytes(), nil
+
+	defer b.Conn.Close()
+	c <- buffer.Bytes()
+	return nil
 }
