@@ -82,7 +82,7 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 func (b *RabbitRepo) ConsumeMessages(c chan []byte) error {
 	msgs, err := b.Ch.Consume(
 		"SOMEQUEUE", // queue
-		"",     // consumer
+		"rabbit_consumer",     // consumer
 		true,   // auto-ack
 		false,  // exclusive
 		false,  // no-local
@@ -91,7 +91,7 @@ func (b *RabbitRepo) ConsumeMessages(c chan []byte) error {
 	)
 
 	if err != nil {
-		log.Error("Error reading messages")
+		log.WithError(err).Error("Error reading messages")
 		return err
 	}
 

@@ -25,18 +25,20 @@ func init() {
 		log.WithError(err).Fatal(err.Error())
 	}
 
-	repository, err = rp.InitRabbitRepo(cfg.SrvName)
+	rabbit_one, err := rp.InitRabbitRepo(cfg.SrvName)
+
+	rabbit_two, err := rp.InitRabbitRepo(cfg.SrvName)
 	if err != nil {
 		log.WithError(err).Fatal("Error connecting to bus")
 	}
 
 	handlers = controller.Handler{
-		Repository: repository,
+		Repository: rabbit_one,
 	}
 
 	app = controller.App{
 		HTTPController: handlers,
-		BusController:  repository,
+		BusController:  rabbit_two,
 	}
 }
 
