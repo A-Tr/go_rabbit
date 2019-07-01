@@ -3,7 +3,7 @@ package main
 import (
 	"go_rabbit/config"
 	controller "go_rabbit/controller/http"
-	rp "go_rabbit/repositories"
+	msgs "go_rabbit/messages"
 	"net/http"
 
 	"github.com/kelseyhightower/envconfig"
@@ -13,7 +13,7 @@ import (
 var (
 	cfg        config.ServiceConfig
 	handlers   controller.Handler
-	repository rp.Repository
+	repository msgs.Repository
 	app        controller.App
 )
 
@@ -25,12 +25,12 @@ func init() {
 		log.WithError(err).Fatal(err.Error())
 	}
 
-	mqProducer, err := rp.InitRabbitRepo(cfg.SrvName, "producer")
+	mqProducer, err := msgs.InitRabbitRepo(cfg.SrvName, "producer")
 	if err != nil {
 		log.WithError(err).Fatal("Error connecting to bus")
 	}
 
-	mqConsumer, err := rp.InitRabbitRepo(cfg.SrvName, "consumer")
+	mqConsumer, err := msgs.InitRabbitRepo(cfg.SrvName, "consumer")
 	if err != nil {
 		log.WithError(err).Fatal("Error connecting to bus")
 	}

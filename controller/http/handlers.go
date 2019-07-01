@@ -2,14 +2,14 @@ package http
 
 import (
 	"encoding/json"
-	rp "go_rabbit/repositories"
+	msgs "go_rabbit/messages"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	Repository rp.Repository
+	Repository msgs.Repository
 }
 
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 // 		HandleError(err, http.StatusInternalServerError, w, logger)
 // 		return
 // 	}
-// 	var mappedRes models.PostMessage
+// 	var mappedRes messages.PostMessage
 // 	json.Unmarshal(resBytes, &mappedRes)
 // 	w.Write(resBytes)
 // 	log.Info("Everything went ok")
