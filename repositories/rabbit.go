@@ -79,7 +79,14 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 	return nil
 }
 
-func (b *RabbitRepo) ConsumeMessages(c chan []byte) error {
+func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
+	log.Infof("Trigger %s", trigger)
+	b.Ch, b.busErr = b.Conn.Channel()
+	if b.busErr != nil {
+		err := errors.Wrapf(b.busErr, "REPO ERROR")
+		return err
+	}
+
 	msgs, err := b.Ch.Consume(
 		"SOMEQUEUE", // queue
 		"rabbit_consumer",     // consumer
@@ -99,9 +106,10 @@ func (b *RabbitRepo) ConsumeMessages(c chan []byte) error {
 	for d := range msgs {
 		d.Ack(true)
 		buffer.Write(d.Body)
+		log.Infof("Message received %s", d.Body)
 	}
 
-	defer b.Conn.Close()
+	defer b.Ch.Close()
 	c <- buffer.Bytes()
 	return nil
 }

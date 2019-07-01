@@ -48,15 +48,18 @@ func main() {
 	log.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
 
 	msgChan := make(chan []byte)
-
-	go app.BusController.ConsumeMessages(msgChan)
+	start := []byte(`Patata`)
+	go app.BusController.ConsumeMessages(start, msgChan)
 
 	go func() {
 		for d := range msgChan {
-			log.Printf(" [x] %s", d)
+			go app.BusController.ConsumeMessages(d, msgChan)
 		}
 	}()
+	
 
 	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
 	log.Fatal(http.ListenAndServe(cfg.Port, appRouter))
+
+	
 }

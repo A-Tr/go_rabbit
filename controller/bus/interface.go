@@ -1,5 +1,5 @@
 package bus
 
 type BusController interface {
-	ConsumeMessages(c chan []byte) error
+	ConsumeMessages([]byte, chan []byte) error
 }

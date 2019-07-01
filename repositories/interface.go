@@ -6,5 +6,5 @@ import (
 
 type Repository interface {
 	PublishMessage(string, string, *logrus.Entry) error
-	ConsumeMessages(chan []byte) error
+	ConsumeMessages([]byte, chan []byte) error
 }
