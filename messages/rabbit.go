@@ -1,9 +1,8 @@
-package repositories
+package messages
 
 import (
 	"bytes"
 	"encoding/json"
-	"go_rabbit/models"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,7 +42,7 @@ func InitRabbitRepo(srvName string, name string) (*RabbitRepo, error) {
 }
 
 func (b *RabbitRepo) createMessage(msg string) (amqp.Publishing, error) {
-	message := models.PostMessage{
+	message := PostMessage{
 		Message:   msg,
 		Publisher: b.Name,
 		Timestamp: time.Now(),

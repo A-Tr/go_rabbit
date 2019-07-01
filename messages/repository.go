@@ -1,4 +1,4 @@
-package repositories
+package messages
 
 import (
 	"github.com/sirupsen/logrus"
