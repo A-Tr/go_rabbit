@@ -16,13 +16,15 @@ type RabbitRepo struct {
 	Q       amqp.Queue
 	Ch      *amqp.Channel
 	Conn    *amqp.Connection
+	Name    string
 	busErr  error
 	SrvName string
 }
 
-func InitRabbitRepo(srvName string) (*RabbitRepo, error) {
+func InitRabbitRepo(srvName string, name string) (*RabbitRepo, error) {
 	config := &RabbitRepo{
 		SrvName: srvName,
+		Name:    name,
 	}
 
 	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
@@ -43,7 +45,7 @@ func InitRabbitRepo(srvName string) (*RabbitRepo, error) {
 func (b *RabbitRepo) createMessage(msg string) (amqp.Publishing, error) {
 	message := models.PostMessage{
 		Message:   msg,
-		Publisher: b.SrvName,
+		Publisher: b.Name,
 		Timestamp: time.Now(),
 	}
 	msgBytes, err := json.Marshal(message)
@@ -80,7 +82,6 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 }
 
 func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
-	log.Infof("Trigger %s", trigger)
 	b.Ch, b.busErr = b.Conn.Channel()
 	if b.busErr != nil {
 		err := errors.Wrapf(b.busErr, "REPO ERROR")
@@ -89,12 +90,12 @@ func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
 
 	msgs, err := b.Ch.Consume(
 		"SOMEQUEUE", // queue
-		"rabbit_consumer",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+		b.Name,      // consumer
+		true,        // auto-ack
+		false,       // exclusive
+		false,       // no-local
+		false,       // no-wait
+		nil,         // args
 	)
 
 	if err != nil {
@@ -106,7 +107,7 @@ func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
 	for d := range msgs {
 		d.Ack(true)
 		buffer.Write(d.Body)
-		log.Infof("Message received %s", d.Body)
+		log.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
 	}
 
 	defer b.Ch.Close()

@@ -25,20 +25,23 @@ func init() {
 		log.WithError(err).Fatal(err.Error())
 	}
 
-	rabbit_one, err := rp.InitRabbitRepo(cfg.SrvName)
+	mqProducer, err := rp.InitRabbitRepo(cfg.SrvName, "producer")
+	if err != nil {
+		log.WithError(err).Fatal("Error connecting to bus")
+	}
 
-	rabbit_two, err := rp.InitRabbitRepo(cfg.SrvName)
+	mqConsumer, err := rp.InitRabbitRepo(cfg.SrvName, "consumer")
 	if err != nil {
 		log.WithError(err).Fatal("Error connecting to bus")
 	}
 
 	handlers = controller.Handler{
-		Repository: rabbit_one,
+		Repository: mqProducer,
 	}
 
 	app = controller.App{
 		HTTPController: handlers,
-		BusController:  rabbit_two,
+		BusController:  mqConsumer,
 	}
 }
 
@@ -48,18 +51,15 @@ func main() {
 	log.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
 
 	msgChan := make(chan []byte)
-	start := []byte(`Patata`)
-	go app.BusController.ConsumeMessages(start, msgChan)
 
+	go app.BusController.ConsumeMessages([]byte{}, msgChan)
 	go func() {
 		for d := range msgChan {
 			go app.BusController.ConsumeMessages(d, msgChan)
 		}
 	}()
-	
 
 	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
 	log.Fatal(http.ListenAndServe(cfg.Port, appRouter))
 
-	
 }
