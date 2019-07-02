@@ -42,7 +42,7 @@ func InitRabbitRepo(srvName string, name string) (*RabbitRepo, error) {
 	return config, nil
 }
 
-func (b *RabbitRepo) createMessage(msg string) (amqp.Publishing, error) {
+func (b *RabbitRepo) createMessage(msg string, log *log.Entry) (amqp.Publishing, error) {
 	message := models.PostMessage{
 		Message:   msg,
 		Publisher: b.Name,
@@ -60,14 +60,14 @@ func (b *RabbitRepo) createMessage(msg string) (amqp.Publishing, error) {
 	}, nil
 }
 
-func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
+func (b *RabbitRepo) PublishMessage(msg, queue string, logger *log.Entry) error {
 	b.Q, b.busErr = b.Ch.QueueDeclare(queue, false, false, false, false, nil)
 	if b.busErr != nil {
 		err := errors.Wrapf(b.busErr, "QUEUE ERROR: %s", queue)
 		return err
 	}
 
-	msgRdy, err := b.createMessage(msg)
+	msgRdy, err := b.createMessage(msg, logger)
 	if err != nil {
 		err = errors.Wrapf(err, "QUEUE ERROR: Couldn't create message %s for queue %s", msg, queue)
 		return err

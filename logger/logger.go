@@ -9,7 +9,6 @@ import (
 // Logger Config includes necessary data to
 // create a logger
 type LoggerConfig struct {
-	Service   string
 	Component string
 }
 
@@ -36,7 +35,6 @@ func Init(o io.Writer, level logrus.Level) {
 // returns a logger ready with extra fields
 func NewLogger(config LoggerConfig, traceId string) *logrus.Entry {
 	fields := logrus.Fields{
-		"templates":  config.Service,
 		"component":  config.Component,
 		"@timestamp": time.Now().UTC().Format(time.RFC3339),
 		"traceid":    traceId,

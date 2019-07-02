@@ -14,7 +14,7 @@ type Handler struct {
 }
 
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
-	logger := log.NewLogger(log.LoggerConfig{Service: "someService", Component: "someComponent"}, r.Header.Get("request-id"))
+	logger := log.NewLogger(log.LoggerConfig{Component: "Send Message Handler"}, r.Header.Get("request-id"))
 
 	err := h.Repository.PublishMessage("nuevomensajedefinitivo", "SOMEQUEUE", logger)
 	if err != nil {
@@ -26,14 +26,14 @@ func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLiveness(w http.ResponseWriter, r *http.Request) {
-	logger := log.NewLogger(log.LoggerConfig{Service: "someService", Component: "someComponent"}, r.Header.Get("request-id"))
+	logger := log.NewLogger(log.LoggerConfig{Component: "Liveness Handler"}, r.Header.Get("request-id"))
 
 	logger.Print("TODO EN ORDEN")
 	w.WriteHeader(200)
 }
 
 func HandleReadiness(w http.ResponseWriter, r *http.Request) {
-	logger := log.NewLogger(log.LoggerConfig{Service: "someService", Component: "someComponent"}, r.Header.Get("request-id"))
+	logger := log.NewLogger(log.LoggerConfig{Component: "Readiness Handler"}, r.Header.Get("request-id"))
 
 	logger.Print("TODO EN ORDEN")
 	w.WriteHeader(200)

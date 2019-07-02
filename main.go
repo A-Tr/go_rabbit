@@ -17,7 +17,7 @@ var (
 	handlers   controller.Handler
 	repository rp.Repository
 	app        controller.App
-	loggerCfg     log.LoggerConfig
+	loggerCfg  log.LoggerConfig
 )
 
 func init() {
@@ -56,7 +56,7 @@ func main() {
 	logger.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
 
 	go func() {
-		err :=  app.BusController.ConsumeMessages(logger)
+		err := app.BusController.ConsumeMessages(logger)
 		if err != nil {
 			logger.WithError(err).Fatal("MAIN: Error consuming messages")
 		}
