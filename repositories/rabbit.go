@@ -81,24 +81,8 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 	return nil
 }
 
-func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
-
-	// msgs, err := b.Ch.Consume(
-	// 	"SOMEQUEUE", // queue
-	// 	b.Name,      // consumer
-	// 	true,        // auto-ack
-	// 	false,       // exclusive
-	// 	false,       // no-local
-	// 	false,       // no-wait
-	// 	nil,         // args
-	// )
-	// if err != nil {
-	// 	log.WithError(err).Error("Error reading messages")
-	// 	return err
-	// }
-
+func (b *RabbitRepo) ConsumeMessages(logger *log.Entry) error {
 	var buffer bytes.Buffer
-
 	for {
 		b.Ch, b.busErr = b.Conn.Channel()
 		if b.busErr != nil {
@@ -117,17 +101,14 @@ func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
 		)
 
 		if err != nil {
-			log.WithError(err).Error("Error reading messages")
+			logger.WithError(err).Error("Error reading messages")
 			return err
 		}
 		for d := range msgs {
 			d.Ack(true)
 			buffer.Write(d.Body)
-			log.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
+			logger.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
 		}
-		b.Ch.Close()
+		defer b.Ch.Close()
 	}
-
-	c <- buffer.Bytes()
-	return nil
 }

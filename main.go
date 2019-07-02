@@ -1,13 +1,15 @@
 package main
 
 import (
+	"github.com/sirupsen/logrus"
 	"go_rabbit/config"
 	controller "go_rabbit/controller/http"
 	rp "go_rabbit/repositories"
 	"net/http"
+	"os"
 
 	"github.com/kelseyhightower/envconfig"
-	log "github.com/sirupsen/logrus"
+	log "go_rabbit/logger"
 )
 
 var (
@@ -15,24 +17,25 @@ var (
 	handlers   controller.Handler
 	repository rp.Repository
 	app        controller.App
+	loggerCfg     log.LoggerConfig
 )
 
 func init() {
-	log.SetFormatter(&log.JSONFormatter{})
+	log.Init(os.Stdout, logrus.InfoLevel)
 
 	err := envconfig.Process("local", &cfg)
 	if err != nil {
-		log.WithError(err).Fatal(err.Error())
+		logrus.WithError(err).Fatal(err.Error())
 	}
 
 	mqProducer, err := rp.InitRabbitRepo(cfg.SrvName, "producer")
 	if err != nil {
-		log.WithError(err).Fatal("Error connecting to bus")
+		logrus.WithError(err).Fatal("Error connecting to bus")
 	}
 
 	mqConsumer, err := rp.InitRabbitRepo(cfg.SrvName, "consumer")
 	if err != nil {
-		log.WithError(err).Fatal("Error connecting to bus")
+		logrus.WithError(err).Fatal("Error connecting to bus")
 	}
 
 	handlers = controller.Handler{
@@ -43,19 +46,23 @@ func init() {
 		HTTPController: handlers,
 		BusController:  mqConsumer,
 	}
+
 }
 
 func main() {
 
+	logger := log.NewLogger(loggerCfg, "CONSUMER_LOGGER")
 	appRouter := app.CreateRouter()
-	log.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
+	logger.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
 
-	msgChan := make(chan []byte)
+	go func() {
+		err :=  app.BusController.ConsumeMessages(logger)
+		if err != nil {
+			logger.WithError(err).Fatal("MAIN: Error consuming messages")
+		}
+	}()
 
-	go app.BusController.ConsumeMessages([]byte{}, msgChan)
-
-
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
-	log.Fatal(http.ListenAndServe(cfg.Port, appRouter))
+	logger.Printf(" [*] Waiting for logs. To exit press CTRL+C")
+	logger.Fatal(http.ListenAndServe(cfg.Port, appRouter))
 
 }

@@ -1,5 +1,9 @@
 package bus
 
+import (
+	"github.com/sirupsen/logrus"
+)
+
 type BusController interface {
-	ConsumeMessages([]byte, chan []byte) error
+	ConsumeMessages(*logrus.Entry) error
 }
