@@ -105,7 +105,7 @@ func (b *RabbitRepo) ConsumeMessages(logger *log.Entry) error {
 			return err
 		}
 		for d := range msgs {
-			d.Ack(true)
+			//d.Ack(true) Auto ACK is true
 			buffer.Write(d.Body)
 			logger.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
 		}
