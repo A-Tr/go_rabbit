@@ -27,7 +27,7 @@ func InitRabbitRepo(srvName string, name string) (*RabbitRepo, error) {
 		Name:    name,
 	}
 
-	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
+	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@172.17.0.2:5672")
 	if config.busErr != nil {
 		err := errors.Wrapf(config.busErr, "REPO ERROR")
 		return nil, err
@@ -82,35 +82,52 @@ func (b *RabbitRepo) PublishMessage(msg, queue string, log *log.Entry) error {
 }
 
 func (b *RabbitRepo) ConsumeMessages(trigger []byte, c chan []byte) error {
-	b.Ch, b.busErr = b.Conn.Channel()
-	if b.busErr != nil {
-		err := errors.Wrapf(b.busErr, "REPO ERROR")
-		return err
-	}
 
-	msgs, err := b.Ch.Consume(
-		"SOMEQUEUE", // queue
-		b.Name,      // consumer
-		true,        // auto-ack
-		false,       // exclusive
-		false,       // no-local
-		false,       // no-wait
-		nil,         // args
-	)
-
-	if err != nil {
-		log.WithError(err).Error("Error reading messages")
-		return err
-	}
+	// msgs, err := b.Ch.Consume(
+	// 	"SOMEQUEUE", // queue
+	// 	b.Name,      // consumer
+	// 	true,        // auto-ack
+	// 	false,       // exclusive
+	// 	false,       // no-local
+	// 	false,       // no-wait
+	// 	nil,         // args
+	// )
+	// if err != nil {
+	// 	log.WithError(err).Error("Error reading messages")
+	// 	return err
+	// }
 
 	var buffer bytes.Buffer
-	for d := range msgs {
-		d.Ack(true)
-		buffer.Write(d.Body)
-		log.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
+
+	for {
+		b.Ch, b.busErr = b.Conn.Channel()
+		if b.busErr != nil {
+			err := errors.Wrapf(b.busErr, "REPO ERROR")
+			return err
+		}
+		
+		msgs, err := b.Ch.Consume(
+			"SOMEQUEUE", // queue
+			b.Name,      // consumer
+			true,        // auto-ack
+			false,       // exclusive
+			false,       // no-local
+			false,       // no-wait
+			nil,         // args
+		)
+
+		if err != nil {
+			log.WithError(err).Error("Error reading messages")
+			return err
+		}
+		for d := range msgs {
+			d.Ack(true)
+			buffer.Write(d.Body)
+			log.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
+		}
+		b.Ch.Close()
 	}
 
-	defer b.Ch.Close()
 	c <- buffer.Bytes()
 	return nil
 }

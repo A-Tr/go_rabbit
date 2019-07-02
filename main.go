@@ -53,11 +53,7 @@ func main() {
 	msgChan := make(chan []byte)
 
 	go app.BusController.ConsumeMessages([]byte{}, msgChan)
-	go func() {
-		for d := range msgChan {
-			go app.BusController.ConsumeMessages(d, msgChan)
-		}
-	}()
+
 
 	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
 	log.Fatal(http.ListenAndServe(cfg.Port, appRouter))
