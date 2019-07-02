@@ -57,6 +57,12 @@ func main() {
 	appRouter := app.CreateRouter()
 	logger.Print("Starting server " + cfg.SrvName + " on port " + cfg.Port)
 
+	logger.Println(" [*] Waiting for logs. To exit press CTRL+C")
+	//Queue should exist before consume
+	go func() {
+		logger.Fatal(http.ListenAndServe(cfg.Port, appRouter))
+	}()
+
 	go func() {
 		err := app.BusController.ConsumeMessages(logger)
 		if err != nil {
