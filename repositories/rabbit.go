@@ -27,7 +27,7 @@ func InitRabbitRepo(srvName string, name string) (*RabbitRepo, error) {
 		Name:    name,
 	}
 
-	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@172.17.0.2:5672")
+	config.Conn, config.busErr = amqp.Dial("amqp://guest:guest@localhost:5672")
 	if config.busErr != nil {
 		err := errors.Wrapf(config.busErr, "REPO ERROR")
 		return nil, err
@@ -89,7 +89,7 @@ func (b *RabbitRepo) ConsumeMessages(logger *log.Entry) error {
 			err := errors.Wrapf(b.busErr, "REPO ERROR")
 			return err
 		}
-		
+
 		msgs, err := b.Ch.Consume(
 			"SOMEQUEUE", // queue
 			b.Name,      // consumer
@@ -105,7 +105,7 @@ func (b *RabbitRepo) ConsumeMessages(logger *log.Entry) error {
 			return err
 		}
 		for d := range msgs {
-			d.Ack(true)
+			//d.Ack(true) Auto ACK is true
 			buffer.Write(d.Body)
 			logger.WithField("consumer: ", b.Name).Infof("Message received %s", d.Body)
 		}
